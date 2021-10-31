@@ -1,0 +1,26 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: {ISSUER_URI}
+          jwk-set-uri: https://www.googleapis.com/robot/v1/metadata/jwk/securetoken@system.gserviceaccount.com
+
+firebase:
+  project-id: {PROJECT_ID}
+  private-key-id: {PRIVATE_KEY_ID}
+  private-key: {PRIVATE_KEY}
+  client-email: {CLIENT_EMAIL}
+  client-id: {CLIENT_ID}
+  client-x509-cert-url: {CERT_URL}
+
+neo4j:
+  uri: {NEO4J_URI}
+  username: {NEO4J_USERNAME}
+  password: {NEO4J_PASSWORD}
+  client:
+    connection-timeout: 5000
+    connection-acquisition-timeout: 1000
+    connection-pool-size: 10
+    max-transaction-retry-time-ms: 1000
+    max-connection-lifetime-minutes: 10
