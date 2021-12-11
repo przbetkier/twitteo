@@ -33,7 +33,7 @@ class TweetEndpoint(
             hashtags,
             request.content
         ).also {
-            logger.info {"User $uid posted tweet ${it.id} with content ${it.content} tagged with [${it.hashtags}]"}
+            logger.info { "User $uid posted tweet ${it.id} with content ${it.content} tagged with [${it.hashtags}]" }
         }
     }
 
@@ -48,6 +48,28 @@ class TweetEndpoint(
 
         val userId: String = authentication.name
         return tweetRepository.getFeed(userId, pageable)
+    }
+
+    @PostMapping("/{tweetId}/replies")
+    fun reply(@RequestBody request: TweetRequest, @PathVariable tweetId: Long): TweetResponse {
+        val authentication: Authentication = SecurityContextHolder.getContext().authentication
+        val hashtags = HashtagExtractor.extract(request.content).toSet()
+
+        val uid: String = authentication.name
+
+        return tweetRepository.replyToTweet(
+            uid,
+            tweetId,
+            hashtags,
+            request.content
+        ).also {
+            logger.info { "User $uid posted tweet ${it.id} as a reply to tweet $tweetId with content ${it.content} tagged with [${it.hashtags}]" }
+        }
+    }
+
+    @GetMapping("/{tweetId}/replies")
+    fun getReplies(@PathVariable tweetId: Long, pageable: Pageable): List<TweetResponse> {
+        return tweetRepository.getReplies(tweetId, pageable)
     }
 
 }

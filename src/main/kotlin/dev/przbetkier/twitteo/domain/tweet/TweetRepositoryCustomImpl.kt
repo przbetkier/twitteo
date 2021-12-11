@@ -46,6 +46,50 @@ open class TweetRepositoryCustomImpl(private val neo4jClient: Neo4jClient) : Twe
             .all().first()
     }
 
+    override fun replyToTweet(userId: String, referenceTweetId: Long, hashTags: Set<String>, content: String): TweetResponse {
+        val parameters = mapOf(
+            "userId" to userId,
+            "referenceToTweetId" to referenceTweetId,
+            "hashtags" to hashTags.toList(),
+            "content" to content
+        )
+
+        val hashtagsClause = hashTags.takeIf { it.isNotEmpty() }?.let {
+            """
+            UNWIND hashtags AS hashtag
+            MERGE (h: Hashtag {name: hashtag})
+            ON CREATE SET h.createdAt = datetime()
+            MERGE (t)-[:TAGS]->(h)
+            """.trimIndent()
+        } ?: ""
+
+        return neo4jClient.query {
+            """
+                MATCH (u:User {userId: ${"$"}userId })
+                CREATE (t:Tweet {content: ${"$"}content, createdAt: datetime() })
+                MATCH (reference: Tweet) WHERE id(reference) = ${"$"}referenceTweetId
+                MERGE (u)-[:POSTS]->(t)
+                MERGE (t)-[:REPLIES_TO]->(reference)
+                WITH ${"$"}hashtags as hashtags, t, u
+                $hashtagsClause
+                WITH t as tweet, u, hashtags
+                RETURN 
+                {
+                    id: id(tweet),
+                    content: tweet.content,
+                    createdAt: tweet.createdAt,
+                    hashtags: hashtags,
+                    userId: u.userId,
+                    userName: u.displayName
+                } as tweet
+            """.trimIndent()
+        }
+            .bindAll(parameters)
+            .fetchAs(TweetResponse::class.java)
+            .mappedBy { _, record -> TweetResponse.fromRecord(record) }
+            .all().first()
+    }
+
     override fun findByAuthor(userId: String, pageable: Pageable): List<TweetResponse> {
         val parameters = mapOf(
             "userId" to userId,
@@ -91,6 +135,36 @@ open class TweetRepositoryCustomImpl(private val neo4jClient: Neo4jClient) : Twe
                     id: id(t),
                     content: t.content,
                     createdAt: t.createdAt,
+                    hashtags: collect(DISTINCT h.name),
+                    userId: u.userId,
+                    userName: u.displayName
+                } as tweet
+                SKIP ${"$"}offset LIMIT ${"$"}limit
+            """.trimIndent()
+        }
+            .bindAll(parameters)
+            .fetchAs(TweetResponse::class.java)
+            .mappedBy { _, record -> TweetResponse.fromRecord(record) }
+            .all().toList()
+    }
+
+    override fun getReplies(referenceTweetId: Long, pageable: Pageable): List<TweetResponse> {
+        val parameters = mapOf(
+            "referenceTweetId" to referenceTweetId,
+            "limit" to pageable.pageSize,
+            "offset" to pageable.offset
+        )
+
+        return neo4jClient.query {
+            """
+                MATCH (u:User)-[:POSTS]->(r:Tweet)-[:REPLIES_TO]->(t:Tweet)
+                WHERE ID(t) = ${"$"}referenceTweetId  
+                OPTIONAL MATCH (r)-[:TAGS]->(h:Hashtag)
+                RETURN 
+                {
+                    id: id(r),
+                    content: r.content,
+                    createdAt: r.createdAt,
                     hashtags: collect(DISTINCT h.name),
                     userId: u.userId,
                     userName: u.displayName
