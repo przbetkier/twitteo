@@ -49,7 +49,7 @@ open class TweetRepositoryCustomImpl(private val neo4jClient: Neo4jClient) : Twe
     override fun replyToTweet(userId: String, referenceTweetId: Long, hashTags: Set<String>, content: String): TweetResponse {
         val parameters = mapOf(
             "userId" to userId,
-            "referenceToTweetId" to referenceTweetId,
+            "referenceTweetId" to referenceTweetId,
             "hashtags" to hashTags.toList(),
             "content" to content
         )
@@ -67,6 +67,7 @@ open class TweetRepositoryCustomImpl(private val neo4jClient: Neo4jClient) : Twe
             """
                 MATCH (u:User {userId: ${"$"}userId })
                 CREATE (t:Tweet {content: ${"$"}content, createdAt: datetime() })
+                WITH u, t
                 MATCH (reference: Tweet) WHERE id(reference) = ${"$"}referenceTweetId
                 MERGE (u)-[:POSTS]->(t)
                 MERGE (t)-[:REPLIES_TO]->(reference)
