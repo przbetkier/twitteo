@@ -48,4 +48,6 @@ class UserService(
     fun getFollowerState(followerUid: String, followeeUid: String): FollowerState {
         return userRepository.getFollowerState(followerUid, followeeUid)
     }
+
+    fun updateBio(userId: String, bio: String) = userRepository.setBio(userId, bio)
 }

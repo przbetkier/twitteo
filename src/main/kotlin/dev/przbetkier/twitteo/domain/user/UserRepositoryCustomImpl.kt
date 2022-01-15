@@ -20,6 +20,7 @@ class UserRepositoryCustomImpl(private val neo4jClient: Neo4jClient) : UserRepos
                 {
                     userId: u.userId,
                     displayName: u.displayName,
+                    bio: u.bio,
                     follows: COUNT(distinct follows),
                     followers: COUNT(distinct follower)
                 } as user
@@ -110,13 +111,30 @@ class UserRepositoryCustomImpl(private val neo4jClient: Neo4jClient) : UserRepos
             .mappedBy { _, record -> FollowerState.fromRecord(record) }
             .all().first()
     }
+
+    override fun setBio(userId: String, bio: String) {
+        val parameters = mapOf(
+            "userId" to userId,
+            "bio" to bio
+        )
+
+        neo4jClient.query {
+            """
+                MATCH (u:User {userId: ${"$"}userId})
+                SET u.bio = ${"$"}bio
+            """.trimIndent()
+        }
+            .bindAll(parameters)
+            .run()
+    }
 }
 
 data class UserResponse(
     val userId: String,
     val displayName: String,
     val followers: Long,
-    val follows: Long
+    val follows: Long,
+    val bio: String
 ) {
     companion object {
         fun fromRecord(record: Record) =
@@ -125,7 +143,8 @@ data class UserResponse(
                     it.get("userId").asString(),
                     it.get("displayName").asString(),
                     it.get("followers").asLong(),
-                    it.get("follows").asLong()
+                    it.get("follows").asLong(),
+                    it.get("bio").asString("")
                 )
             }
     }

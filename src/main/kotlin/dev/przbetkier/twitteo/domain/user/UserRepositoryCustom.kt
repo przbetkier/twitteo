@@ -7,4 +7,5 @@ interface UserRepositoryCustom {
     fun getFollowerState(followerUid: String, followeeUid: String): FollowerState
     fun follow(followerUid: String, followeeUid: String): FollowerState
     fun unfollow(followerUid: String, followeeUid: String): FollowerState
+    fun setBio(userId: String, bio: String)
 }

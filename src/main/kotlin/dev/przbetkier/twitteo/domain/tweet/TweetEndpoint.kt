@@ -5,6 +5,7 @@ import mu.KotlinLogging
 import org.springframework.data.domain.Pageable
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -44,6 +45,7 @@ class TweetEndpoint(
 
     @GetMapping("/feed")
     fun getTweetFeed(pageable: Pageable): TweetPageResponse {
+
         val authentication: Authentication = SecurityContextHolder.getContext().authentication
 
         val userId: String = authentication.name
@@ -70,6 +72,40 @@ class TweetEndpoint(
     @GetMapping("/{tweetId}/replies")
     fun getReplies(@PathVariable tweetId: Long, pageable: Pageable): List<TweetResponse> {
         return tweetRepository.getReplies(tweetId, pageable)
+    }
+
+    @PostMapping("/{tweetId}/like")
+    fun like(@PathVariable tweetId: Long): LikedTweetResponse {
+        val authentication: Authentication = SecurityContextHolder.getContext().authentication
+        val uid: String = authentication.name
+        return tweetRepository.likeTweet(uid, tweetId).also {
+            println("Liked tweet")
+            println(uid)
+        }
+    }
+
+    @PostMapping("/{tweetId}/unlike")
+    fun unlike(@PathVariable tweetId: Long): LikedTweetResponse {
+        val authentication: Authentication = SecurityContextHolder.getContext().authentication
+        val uid: String = authentication.name
+        return tweetRepository.unlikeTweet(uid, tweetId).also {
+            println("Unliked tweet")
+        }
+    }
+
+    @GetMapping("/{tweetId}/like-state")
+    fun likeState(@PathVariable tweetId: Long): TweetLikeStateResponse
+    {
+        val authentication: Authentication = SecurityContextHolder.getContext().authentication
+        val uid: String = authentication.name
+        return tweetRepository.getLikeState(uid, tweetId)
+    }
+
+    @DeleteMapping("/{tweetId}")
+    fun delete(@PathVariable tweetId: Long) {
+        val authentication: Authentication = SecurityContextHolder.getContext().authentication
+        val uid: String = authentication.name
+        return tweetRepository.deleteTweet(uid, tweetId)
     }
 
 }

@@ -26,7 +26,8 @@ data class TweetResponse(
     val hashtags: Set<String>,
     val createdAt: ZonedDateTime,
     val userId: String,
-    val userName: String
+    val userName: String,
+    val replies: Long
 ) {
     companion object {
         fun fromValue(value: Value): TweetResponse {
@@ -36,7 +37,8 @@ data class TweetResponse(
                 value.get("hashtags").asList { p -> p.asString() }.toSet(),
                 value.get("createdAt").asZonedDateTime(),
                 value.get("userId").asString(),
-                value.get("userName").asString()
+                value.get("userName").asString(),
+                value.get("replies").asLong(),
             )
         }
 
@@ -47,7 +49,22 @@ data class TweetResponse(
                 record.get("tweet").get("hashtags").asList { p -> p.asString() }.toSet(),
                 record.get("tweet").get("createdAt").asZonedDateTime(),
                 record.get("tweet").get("userId").asString(),
-                record.get("tweet").get("userName").asString()
+                record.get("tweet").get("userName").asString(),
+                record.get("tweet").get("replies").asLong(),
+            )
+        }
+    }
+}
+
+data class LikedTweetResponse(
+    val id: Long,
+    val likes: Long
+) {
+    companion object {
+        fun fromRecord(record: Record): LikedTweetResponse {
+            return LikedTweetResponse(
+                record.get("tweet").get("id").asLong(),
+                record.get("tweet").get("likes").asLong()
             )
         }
     }

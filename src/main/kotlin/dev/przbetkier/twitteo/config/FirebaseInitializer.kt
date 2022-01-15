@@ -4,7 +4,6 @@ import com.google.auth.oauth2.GoogleCredentials
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import mu.KotlinLogging
-import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 import java.io.IOException
 import javax.annotation.PostConstruct
@@ -12,7 +11,6 @@ import javax.annotation.PostConstruct
 private val logger = KotlinLogging.logger {}
 
 @Component
-@Profile("!integration")
 class FirebaseInitializer(
     private val firebaseProperties: FirebaseConfigurationProperties
 ) {

@@ -16,4 +16,5 @@ data class User(
     val tweets: MutableList<Tweet> = mutableListOf(),
     @Relationship(type = "FOLLOWS", direction = OUTGOING)
     val follows: MutableList<User> = mutableListOf(),
+    val bio: String? = ""
 )

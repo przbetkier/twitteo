@@ -1,6 +1,7 @@
 package dev.przbetkier.twitteo.domain.user
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import mu.KotlinLogging
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -17,6 +18,8 @@ class UserEndpoint(
     private val userService: UserService
 ) {
 
+    private val logger = KotlinLogging.logger {}
+
     @GetMapping("/{userId}")
     fun getUser(@PathVariable userId: String): UserResponse =
         userService.getUser(userId)
@@ -26,20 +29,31 @@ class UserEndpoint(
         return userService.getFollowers(userId)
     }
 
+    @PostMapping("/bio")
+    fun setBio(@RequestBody request: BioUpdateRequest) {
+        val authentication: Authentication = SecurityContextHolder.getContext().authentication
+        val uid: String = authentication.name
+
+        return userService.updateBio(uid, request.bio)
+    }
+
     @PostMapping("/{followee}/followers")
     fun follow(@PathVariable followee: String): FollowerState {
         val authentication: Authentication = SecurityContextHolder.getContext().authentication
         val uid: String = authentication.name
 
-        return userService.follow(uid, followee)
+        return userService.follow(uid, followee).also {
+            logger.info { "User $uid now follows $followee" }
+        }
     }
 
     @DeleteMapping("/{followee}/followers")
     fun unfollow(@PathVariable followee: String): FollowerState {
         val authentication: Authentication = SecurityContextHolder.getContext().authentication
         val uid: String = authentication.name
-
-        return userService.unfollow(uid, followee)
+        return userService.unfollow(uid, followee).also {
+            logger.info { "User $uid unfollowed $followee" }
+        }
     }
 
     @GetMapping("/{followee}/follower-state")
@@ -58,15 +72,20 @@ class UserEndpoint(
         val authentication: Authentication = SecurityContextHolder.getContext().authentication
         val uid: String = authentication.name
 
-        userService.createUser(uid, request)
+        userService.createUser(uid, request).also {
+            logger.info { "Created user node: $uid" }
+        }
     }
 
     private fun isAnonymous(authentication: Authentication): Boolean {
-
         return authentication.authorities.map { it.authority }.contains("ROLE_ANONYMOUS")
     }
 }
 
 data class CreateUserRequest(
     @JsonProperty("displayName") val displayName: String
+)
+
+data class BioUpdateRequest(
+    @JsonProperty("bio") val bio: String
 )
