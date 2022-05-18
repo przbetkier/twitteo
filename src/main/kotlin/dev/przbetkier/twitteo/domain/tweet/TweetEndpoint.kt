@@ -94,8 +94,7 @@ class TweetEndpoint(
     }
 
     @GetMapping("/{tweetId}/like-state")
-    fun likeState(@PathVariable tweetId: Long): TweetLikeStateResponse
-    {
+    fun likeState(@PathVariable tweetId: Long): TweetLikeStateResponse {
         val authentication: Authentication = SecurityContextHolder.getContext().authentication
         val uid: String = authentication.name
         return tweetRepository.getLikeState(uid, tweetId)

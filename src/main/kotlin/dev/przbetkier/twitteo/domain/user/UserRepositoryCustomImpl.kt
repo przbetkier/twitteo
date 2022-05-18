@@ -4,7 +4,9 @@ import org.neo4j.driver.Record
 import org.neo4j.driver.Value
 import org.springframework.data.neo4j.core.Neo4jClient
 
-class UserRepositoryCustomImpl(private val neo4jClient: Neo4jClient) : UserRepositoryCustom {
+class UserRepositoryCustomImpl(
+    private val neo4jClient: Neo4jClient
+) : UserRepositoryCustom {
 
     override fun getUserData(userId: String): UserResponse {
         val parameters = mapOf(
@@ -126,6 +128,34 @@ class UserRepositoryCustomImpl(private val neo4jClient: Neo4jClient) : UserRepos
         }
             .bindAll(parameters)
             .run()
+    }
+
+    override fun searchUserWithDisplayName(query: String, limit: Long): List<UserResponse> {
+        val parameters = mapOf(
+            "query" to ".*(?i)$query.*",
+        )
+
+        return neo4jClient.query {
+            """
+                MATCH (u:User)
+                WHERE u.displayName =~ ${"$"}query
+                WITH u LIMIT $limit
+                OPTIONAL MATCH (follower: User)-[:FOLLOWS]->(u)
+                OPTIONAL MATCH (u)-[:FOLLOWS]->(follows:User)
+                RETURN 
+                {
+                    userId: u.userId,
+                    displayName: u.displayName,
+                    bio: u.bio,
+                    follows: COUNT(distinct follows),
+                    followers: COUNT(distinct follower)
+                } as user
+            """.trimIndent()
+        }
+            .bindAll(parameters)
+            .fetchAs(UserResponse::class.java)
+            .mappedBy { _, record -> UserResponse.fromRecord(record) }
+            .all().toList()
     }
 }
 

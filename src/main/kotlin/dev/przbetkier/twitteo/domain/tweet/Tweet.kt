@@ -16,9 +16,4 @@ data class Tweet(
 
     @Relationship(type = "TAGS", direction = OUTGOING)
     val hashtags: MutableList<Hashtag> = mutableListOf(),
-
-    @Relationship(type = "REPLY_TO", direction = OUTGOING)
-    val repliesTo: MutableList<Tweet> = mutableListOf(),
-    @Relationship(type = "RETWEETS", direction = OUTGOING)
-    val retweets: MutableList<Tweet> = mutableListOf()
 )
