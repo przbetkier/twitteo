@@ -339,4 +339,38 @@ open class TweetRepositoryCustomImpl(private val neo4jClient: Neo4jClient) : Twe
             .mappedBy { _, record -> LikedTweetResponse.fromRecord(record) }
             .one().orElse(LikedTweetResponse(tweetId, 0))
     }
+
+    override fun searchByContent(query: String, limit: Long): List<TweetResponse> {
+        val parameters = mapOf(
+            "query" to ".*(?i)$query.*",
+        )
+
+        return neo4jClient.query {
+            """
+                MATCH (t:Tweet)
+                WHERE t.content =~ ${"$"}query
+                AND NOT t:Reply // for now exclude replies
+                WITH t LIMIT $limit
+                MATCH (u)-[:POSTS]->(t:Tweet) 
+                OPTIONAL MATCH (t)-[:TAGS]->(h:Hashtag)
+                OPTIONAL MATCH (r)-[:REPLIES_TO]->(t)
+                RETURN 
+                {
+                    id: id(t),
+                    content: t.content,
+                    createdAt: t.createdAt,
+                    hashtags: collect(DISTINCT h.name),
+                    userId: u.userId,
+                    userName: u.displayName,
+                    replies: count(r)
+                } as tweet
+                ORDER by tweet.createdAt DESC
+                
+            """.trimIndent()
+        }
+            .bindAll(parameters)
+            .fetchAs(TweetResponse::class.java)
+            .mappedBy { _, record -> TweetResponse.fromRecord(record) }
+            .all().toList()
+    }
 }
