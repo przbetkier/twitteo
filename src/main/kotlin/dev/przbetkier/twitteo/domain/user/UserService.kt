@@ -28,6 +28,7 @@ class UserService(
     }
 
     fun getUser(userId: String) = userRepository.getUserData(userId)
+    fun getUserByDisplayName(displayName: String) = userRepository.getUserDataByDisplayName(displayName)
 
     fun follow(followerUid: String, followeeUid: String): FollowerState {
         logger.info { "User $followerUid wants to follow $followeeUid" }

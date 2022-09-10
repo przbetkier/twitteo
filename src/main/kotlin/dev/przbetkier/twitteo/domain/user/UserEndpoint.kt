@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -23,6 +24,10 @@ class UserEndpoint(
     @GetMapping("/{userId}")
     fun getUser(@PathVariable userId: String): UserResponse =
         userService.getUser(userId)
+
+    @GetMapping
+    fun getUserByDisplayName(@RequestParam displayName: String): UserResponse =
+        userService.getUserByDisplayName(displayName)
 
     @GetMapping("/{userId}/followers")
     fun getFollowers(@PathVariable userId: String): FollowerResponse {
