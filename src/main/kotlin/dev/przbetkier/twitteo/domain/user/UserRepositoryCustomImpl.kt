@@ -8,6 +8,7 @@ class UserRepositoryCustomImpl(
     private val neo4jClient: Neo4jClient
 ) : UserRepositoryCustom {
 
+    // TBRemoved
     override fun getUserData(userId: String): UserResponse {
         val parameters = mapOf(
             "userId" to userId,
@@ -16,6 +17,32 @@ class UserRepositoryCustomImpl(
         return neo4jClient.query {
             """
                 MATCH (u:User {userId: ${"$"}userId})
+                OPTIONAL MATCH (follower: User)-[:FOLLOWS]->(u)
+                OPTIONAL MATCH (u)-[:FOLLOWS]->(follows:User)
+                RETURN 
+                {
+                    userId: u.userId,
+                    displayName: u.displayName,
+                    bio: u.bio,
+                    follows: COUNT(distinct follows),
+                    followers: COUNT(distinct follower)
+                } as user
+            """.trimIndent()
+        }
+            .bindAll(parameters)
+            .fetchAs(UserResponse::class.java)
+            .mappedBy { _, record -> UserResponse.fromRecord(record) }
+            .all().first()
+    }
+
+    override fun getUserDataByDisplayName(displayName: String): UserResponse {
+        val parameters = mapOf(
+            "name" to displayName,
+        )
+
+        return neo4jClient.query {
+            """
+                MATCH (u:User {displayName: ${"$"}name})
                 OPTIONAL MATCH (follower: User)-[:FOLLOWS]->(u)
                 OPTIONAL MATCH (u)-[:FOLLOWS]->(follows:User)
                 RETURN 

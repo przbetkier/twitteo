@@ -5,10 +5,16 @@ import org.springframework.data.neo4j.core.Neo4jClient
 
 open class TweetRepositoryCustomImpl(private val neo4jClient: Neo4jClient) : TweetRepositoryCustom {
 
-    override fun createTweet(userId: String, hashTags: Set<String>, content: String): TweetResponse {
+    override fun createTweet(
+        userId: String,
+        hashTags: Set<String>,
+        mentions: Set<String>,
+        content: String
+    ): TweetResponse {
         val parameters = mapOf(
             "userId" to userId,
             "hashtags" to hashTags.toList(),
+            "mentions" to mentions.toList(),
             "content" to content
         )
 
@@ -21,14 +27,24 @@ open class TweetRepositoryCustomImpl(private val neo4jClient: Neo4jClient) : Twe
             """.trimIndent()
         } ?: ""
 
+        val mentionsClause = mentions.takeIf { it.isNotEmpty() }?.let {
+            """
+            UNWIND mentions AS mention
+            MATCH (mentioned: User {displayName: mention})
+            MERGE (tweet)-[:MENTIONS]->(mentioned)
+            """.trimIndent()
+        } ?: ""
+
         return neo4jClient.query {
             """
                 MATCH (u:User {userId: ${"$"}userId })
                 CREATE (t:Tweet {content: ${"$"}content, createdAt: datetime() })
                 MERGE (u)-[:POSTS]->(t)
-                WITH ${"$"}hashtags as hashtags, t, u
+                WITH ${"$"}hashtags as hashtags, t, u, ${"$"}mentions as mentions
                 $hashtagsClause
-                WITH t as tweet, u, hashtags
+                WITH t as tweet, u, hashtags, mentions
+                $mentionsClause
+                WITH tweet, u, hashtags
                 RETURN 
                 {
                     id: id(tweet),

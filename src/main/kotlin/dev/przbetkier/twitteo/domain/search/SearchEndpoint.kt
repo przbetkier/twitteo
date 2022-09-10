@@ -18,6 +18,7 @@ class SearchEndpoint(
 
     @GetMapping
     fun search(@RequestParam query: String): SearchResult {
+        // TODO sanitize and clear from special characters!
         val users = userRepository.searchUserWithDisplayName(query)
         val tweets = tweetRepository.searchByContent(query)
         return SearchResult(

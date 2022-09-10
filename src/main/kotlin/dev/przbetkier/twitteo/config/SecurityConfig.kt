@@ -3,6 +3,7 @@ package dev.przbetkier.twitteo.config
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
+import org.springframework.http.HttpMethod.POST
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
@@ -27,7 +28,7 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
     override fun configure(http: HttpSecurity) {
         http
             .authorizeRequests()
-            .antMatchers(HttpMethod.POST, "/users/**", "/tweets/**")
+            .antMatchers(POST, "/users/**", "/tweets/**")
             .authenticated()
             .anyRequest()
             .permitAll()

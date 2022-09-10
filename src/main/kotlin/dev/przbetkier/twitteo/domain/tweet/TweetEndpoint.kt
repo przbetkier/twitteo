@@ -1,6 +1,7 @@
 package dev.przbetkier.twitteo.domain.tweet
 
 import dev.przbetkier.twitteo.domain.hashtag.HashtagExtractor
+import dev.przbetkier.twitteo.domain.user.UserMentionExtractor
 import mu.KotlinLogging
 import org.springframework.data.domain.Pageable
 import org.springframework.security.core.Authentication
@@ -25,6 +26,9 @@ class TweetEndpoint(
     fun postTweet(@RequestBody request: TweetRequest): TweetResponse {
 
         val hashtags = HashtagExtractor.extract(request.content).toSet()
+        val mentions = UserMentionExtractor.extract(request.content).toSet().also {
+            logger.info("$it")
+        }
         val authentication: Authentication = SecurityContextHolder.getContext().authentication
 
         val uid: String = authentication.name
@@ -32,6 +36,7 @@ class TweetEndpoint(
         return tweetRepository.createTweet(
             uid,
             hashtags,
+            mentions,
             request.content
         ).also {
             logger.info { "User $uid posted tweet ${it.id} with content ${it.content} tagged with [${it.hashtags}]" }
@@ -104,7 +109,9 @@ class TweetEndpoint(
     fun delete(@PathVariable tweetId: Long) {
         val authentication: Authentication = SecurityContextHolder.getContext().authentication
         val uid: String = authentication.name
-        return tweetRepository.deleteTweet(uid, tweetId)
+        return tweetRepository.deleteTweet(uid, tweetId).also {
+            logger.info { "Tweet $tweetId has been deleted" }
+        }
     }
 
 }
