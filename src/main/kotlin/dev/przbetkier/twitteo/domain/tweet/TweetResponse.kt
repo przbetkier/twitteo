@@ -23,22 +23,20 @@ data class TweetPageResponse(
 data class TweetResponse(
     val id: Long,
     val content: String,
-    val hashtags: Set<String>,
     val createdAt: ZonedDateTime,
     val userId: String,
     val userName: String,
-    val replies: Long
+    val attachments: Set<Long>
 ) {
     companion object {
         fun fromValue(value: Value): TweetResponse {
             return TweetResponse(
                 value.get("id").asLong(),
                 value.get("content").asString(),
-                value.get("hashtags").asList { p -> p.asString() }.toSet(),
                 value.get("createdAt").asZonedDateTime(),
                 value.get("userId").asString(),
                 value.get("userName").asString(),
-                value.get("replies").asLong(),
+                value.get("attachments").asList { p -> p.asLong() }.toSet(),
             )
         }
 
@@ -46,11 +44,10 @@ data class TweetResponse(
             return TweetResponse(
                 record.get("tweet").get("id").asLong(),
                 record.get("tweet").get("content").asString(),
-                record.get("tweet").get("hashtags").asList { p -> p.asString() }.toSet(),
                 record.get("tweet").get("createdAt").asZonedDateTime(),
                 record.get("tweet").get("userId").asString(),
                 record.get("tweet").get("userName").asString(),
-                record.get("tweet").get("replies").asLong(),
+                record.get("tweet").get("attachments").asList { p -> p.asLong() }.toSet(),
             )
         }
     }

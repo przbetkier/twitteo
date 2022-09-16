@@ -28,7 +28,7 @@ class SecurityConfig : WebSecurityConfigurerAdapter() {
     override fun configure(http: HttpSecurity) {
         http
             .authorizeRequests()
-            .antMatchers(POST, "/users/**", "/tweets/**")
+            .antMatchers(POST, "/users/**", "/tweets/**", "/attachments/**")
             .authenticated()
             .anyRequest()
             .permitAll()

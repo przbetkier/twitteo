@@ -19,28 +19,15 @@ private val logger = KotlinLogging.logger {}
 @RestController
 @RequestMapping("/tweets")
 class TweetEndpoint(
-    val tweetRepository: TweetRepository
+    private val tweetRepository: TweetRepository,
+    private val tweetService: TweetService
 ) {
 
     @PostMapping
-    fun postTweet(@RequestBody request: TweetRequest): TweetResponse {
-
-        val hashtags = HashtagExtractor.extract(request.content).toSet()
-        val mentions = UserMentionExtractor.extract(request.content).toSet().also {
-            logger.info("$it")
-        }
-        val authentication: Authentication = SecurityContextHolder.getContext().authentication
-
-        val uid: String = authentication.name
-
-        return tweetRepository.createTweet(
-            uid,
-            hashtags,
-            mentions,
-            request.content
-        ).also {
-            logger.info { "User $uid posted tweet ${it.id} with content ${it.content} tagged with [${it.hashtags}]" }
-        }
+    fun postTweet(
+        @RequestBody request: TweetRequest
+    ): TweetResponse {
+        return tweetService.createTweet(request)
     }
 
     @GetMapping("/{userId}")
@@ -70,7 +57,7 @@ class TweetEndpoint(
             hashtags,
             request.content
         ).also {
-            logger.info { "User $uid posted tweet ${it.id} as a reply to tweet $tweetId with content ${it.content} tagged with [${it.hashtags}]" }
+            logger.info { "User $uid posted tweet ${it.id} as a reply to tweet $tweetId with content ${it.content} tagged with [${hashtags.size}] tags" }
         }
     }
 
@@ -94,7 +81,7 @@ class TweetEndpoint(
         val authentication: Authentication = SecurityContextHolder.getContext().authentication
         val uid: String = authentication.name
         return tweetRepository.unlikeTweet(uid, tweetId).also {
-            println("Unliked tweet")
+            logger.info { "User [$uid] unliked tweet [$tweetId]." }
         }
     }
 
@@ -109,14 +96,11 @@ class TweetEndpoint(
     fun delete(@PathVariable tweetId: Long) {
         val authentication: Authentication = SecurityContextHolder.getContext().authentication
         val uid: String = authentication.name
-        return tweetRepository.deleteTweet(uid, tweetId).also {
-            logger.info { "Tweet $tweetId has been deleted" }
-        }
+        return tweetService.deleteTweet(tweetId, uid)
     }
-
 }
 
 data class TweetRequest(
-    val userId: String,
     val content: String,
+    val attachments: Set<Long>
 )

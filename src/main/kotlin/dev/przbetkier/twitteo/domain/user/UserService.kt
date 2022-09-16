@@ -28,6 +28,8 @@ class UserService(
     }
 
     fun getUser(userId: String) = userRepository.getUserData(userId)
+
+    fun findByUserId(userId: String) = userRepository.findByUserId(userId)
     fun getUserByDisplayName(displayName: String) = userRepository.getUserDataByDisplayName(displayName)
 
     fun follow(followerUid: String, followeeUid: String): FollowerState {
@@ -51,4 +53,12 @@ class UserService(
     }
 
     fun updateBio(userId: String, bio: String) = userRepository.setBio(userId, bio)
+
+    fun getMentionedUsersByContent(content: String) =
+        UserMentionExtractor.extract(content).toSet().let {
+            getUsersByDisplayName(it)
+        }
+
+    private fun getUsersByDisplayName(displayNames: Set<String>) = userRepository.findAllByDisplayNameIn(displayNames)
+
 }

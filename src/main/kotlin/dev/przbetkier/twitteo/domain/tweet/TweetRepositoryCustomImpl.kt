@@ -3,65 +3,9 @@ package dev.przbetkier.twitteo.domain.tweet
 import org.springframework.data.domain.Pageable
 import org.springframework.data.neo4j.core.Neo4jClient
 
-open class TweetRepositoryCustomImpl(private val neo4jClient: Neo4jClient) : TweetRepositoryCustom {
-
-    override fun createTweet(
-        userId: String,
-        hashTags: Set<String>,
-        mentions: Set<String>,
-        content: String
-    ): TweetResponse {
-        val parameters = mapOf(
-            "userId" to userId,
-            "hashtags" to hashTags.toList(),
-            "mentions" to mentions.toList(),
-            "content" to content
-        )
-
-        val hashtagsClause = hashTags.takeIf { it.isNotEmpty() }?.let {
-            """
-            UNWIND hashtags AS hashtag
-            MERGE (h: Hashtag {name: hashtag})
-            ON CREATE SET h.createdAt = datetime()
-            MERGE (t)-[:TAGS]->(h)
-            """.trimIndent()
-        } ?: ""
-
-        val mentionsClause = mentions.takeIf { it.isNotEmpty() }?.let {
-            """
-            UNWIND mentions AS mention
-            MATCH (mentioned: User {displayName: mention})
-            MERGE (tweet)-[:MENTIONS]->(mentioned)
-            """.trimIndent()
-        } ?: ""
-
-        return neo4jClient.query {
-            """
-                MATCH (u:User {userId: ${"$"}userId })
-                CREATE (t:Tweet {content: ${"$"}content, createdAt: datetime() })
-                MERGE (u)-[:POSTS]->(t)
-                WITH ${"$"}hashtags as hashtags, t, u, ${"$"}mentions as mentions
-                $hashtagsClause
-                WITH t as tweet, u, hashtags, mentions
-                $mentionsClause
-                WITH tweet, u, hashtags
-                RETURN 
-                {
-                    id: id(tweet),
-                    content: tweet.content,
-                    createdAt: tweet.createdAt,
-                    hashtags: hashtags,
-                    userId: u.userId,
-                    userName: u.displayName,
-                    replies: 0
-                } as tweet
-            """.trimIndent()
-        }
-            .bindAll(parameters)
-            .fetchAs(TweetResponse::class.java)
-            .mappedBy { _, record -> TweetResponse.fromRecord(record) }
-            .all().first()
-    }
+open class TweetRepositoryCustomImpl(
+    private val neo4jClient: Neo4jClient
+) : TweetRepositoryCustom {
 
     override fun deleteTweet(userId: String, tweetId: Long) {
         val parameters = mapOf(
@@ -73,7 +17,8 @@ open class TweetRepositoryCustomImpl(private val neo4jClient: Neo4jClient) : Twe
             """
                 MATCH (u:User {userId: ${"$"}userId })-[]->(t:Tweet)
                 WHERE ID(t) = ${"$"}tweetId
-                DETACH DELETE t
+                OPTIONAL MATCH (t)-[:ATTACHES]->(a: Attachment)
+                DETACH DELETE t, a
             """.trimIndent()
         }.bindAll(parameters).run()
     }
@@ -140,17 +85,15 @@ open class TweetRepositoryCustomImpl(private val neo4jClient: Neo4jClient) : Twe
             """
                 MATCH (u:User {userId: ${"$"}userId})-[:POSTS]->(t:Tweet)
                 WHERE NOT t:Reply // for now exclude replies
-                OPTIONAL MATCH (t)-[:TAGS]->(h:Hashtag)
-                OPTIONAL MATCH (r)-[:REPLIES_TO]->(t)
+                OPTIONAL MATCH (t)-[:ATTACHES]->(a: Attachment)
                 RETURN 
                 {
                     id: id(t),
                     content: t.content,
                     createdAt: t.createdAt,
-                    hashtags: collect(DISTINCT h.name),
+                    attachments: collect(DISTINCT ID(a)),
                     userId: u.userId,
-                    userName: u.displayName,
-                    replies: count(r)
+                    userName: u.displayName
                 } as tweet
                 ORDER by tweet.createdAt DESC
                 SKIP ${"$"}offset LIMIT ${"$"}limit
@@ -172,16 +115,15 @@ open class TweetRepositoryCustomImpl(private val neo4jClient: Neo4jClient) : Twe
         return neo4jClient.query {
             """
                 MATCH (u:User)-[:POSTS]->(t:Tweet)-[:TAGS]->(h:Hashtag {name: ${"$"}hashtag})
-                OPTIONAL MATCH (r)-[:REPLIES_TO]->(t)
+                OPTIONAL MATCH (t)-[:ATTACHES]->(a: Attachment)
                 RETURN 
                 {
                     id: id(t),
                     content: t.content,
                     createdAt: t.createdAt,
-                    hashtags: collect(DISTINCT h.name),
+                    attachments: collect(DISTINCT ID(a)),
                     userId: u.userId,
-                    userName: u.displayName,
-                    replies: COUNT(r)
+                    userName: u.displayName
                 } as tweet
                 SKIP ${"$"}offset LIMIT ${"$"}limit
             """.trimIndent()
@@ -203,17 +145,13 @@ open class TweetRepositoryCustomImpl(private val neo4jClient: Neo4jClient) : Twe
             """
                 MATCH (u:User)-[:POSTS]->(r:Reply)-[:REPLIES_TO]->(t:Tweet)
                 WHERE ID(t) = ${"$"}referenceTweetId  
-                OPTIONAL MATCH (r)-[:TAGS]->(h:Hashtag)
-                OPTIONAL MATCH (rtr)-[:REPLIES_TO]->(r)
                 RETURN 
                 {
                     id: id(r),
                     content: r.content,
                     createdAt: r.createdAt,
-                    hashtags: collect(DISTINCT h.name),
                     userId: u.userId,
-                    userName: u.displayName,
-                    replies: COUNT(rtr)
+                    userName: u.displayName
                 } as tweet
                 SKIP ${"$"}offset LIMIT ${"$"}limit
             """.trimIndent()
@@ -241,33 +179,26 @@ open class TweetRepositoryCustomImpl(private val neo4jClient: Neo4jClient) : Twe
                 OPTIONAL MATCH (u)-[:FOLLOWS]->(f)-[:POSTS]->(ft:Tweet)
                 WHERE NOT ft:Reply
                 WITH COLLECT(distinct ft) + ut as tweets
+                WITH tweets, SIZE(tweets) as count
                 UNWIND tweets as t
                 MATCH (u)-[:POSTS]->(t)
-                OPTIONAL MATCH (t)-[:TAGS]->(h:Hashtag)
-                OPTIONAL MATCH (r)-[:REPLIES_TO]->(t)
-                WITH 
+                OPTIONAL MATCH (t)-[:ATTACHES]->(a: Attachment)
+                WITH count,
                 {
                     id: id(t),
                     content: t.content,
                     createdAt: t.createdAt,
-                    hashtags: collect(DISTINCT h.name),
+                    attachments: collect(DISTINCT ID(a)),
                     userId: u.userId,
-                    userName: u.displayName,
-                    replies: COUNT(r)
+                    userName: u.displayName
                 } as tweet
                 ORDER by tweet.createdAt DESC
                 SKIP ${"$"}offset LIMIT ${"$"}limit
-                WITH COLLECT(tweet) as tweets
-
-                MATCH (u:User) WHERE u.userId = ${"$"}userId
-                OPTIONAL MATCH (u)-[:POSTS]->(ut:Tweet) 
-                WHERE NOT ut:Reply      
-                OPTIONAL MATCH (u)-[:FOLLOWS]->(f)-[:POSTS]->(ft:Tweet)
-                WHERE NOT ft:Reply
+                WITH COLLECT(tweet) as tweets, count as count
                 
                 RETURN {
                     tweets: tweets,
-                    total: COUNT(distinct ft) + COUNT(distinct ut)
+                    total: count
                 } as result
             """.trimIndent()
         }
@@ -368,17 +299,15 @@ open class TweetRepositoryCustomImpl(private val neo4jClient: Neo4jClient) : Twe
                 AND NOT t:Reply // for now exclude replies
                 WITH t LIMIT $limit
                 MATCH (u)-[:POSTS]->(t:Tweet) 
-                OPTIONAL MATCH (t)-[:TAGS]->(h:Hashtag)
-                OPTIONAL MATCH (r)-[:REPLIES_TO]->(t)
+                OPTIONAL MATCH (t)-[:ATTACHES]->(a: Attachment)
                 RETURN 
                 {
                     id: id(t),
                     content: t.content,
                     createdAt: t.createdAt,
-                    hashtags: collect(DISTINCT h.name),
+                    attachments: collect(DISTINCT ID(a)),
                     userId: u.userId,
-                    userName: u.displayName,
-                    replies: count(r)
+                    userName: u.displayName
                 } as tweet
                 ORDER by tweet.createdAt DESC
                 
