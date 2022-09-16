@@ -5,7 +5,6 @@ import org.springframework.data.domain.Pageable
 interface TweetRepositoryCustom {
 
     fun getFeed(userId: String, pageable: Pageable): TweetPageResponse
-    fun createTweet(userId: String, hashTags: Set<String>, mentions: Set<String>, content: String): TweetResponse
     fun deleteTweet(userId: String, tweetId: Long)
     fun findByAuthor(userId: String, pageable: Pageable): List<TweetResponse>
     fun findByHashtag(tagId: String, pageable: Pageable): List<TweetResponse>
