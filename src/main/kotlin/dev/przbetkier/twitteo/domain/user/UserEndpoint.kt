@@ -2,6 +2,7 @@ package dev.przbetkier.twitteo.domain.user
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import mu.KotlinLogging
+import org.springframework.data.domain.Pageable
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -30,8 +31,13 @@ class UserEndpoint(
         userService.getUserByDisplayName(displayName)
 
     @GetMapping("/{userId}/followers")
-    fun getFollowers(@PathVariable userId: String): FollowerResponse {
-        return userService.getFollowers(userId)
+    fun getFollowers(@PathVariable userId: String, pageable: Pageable): FollowerResponse {
+        return userService.getFollowers(userId, pageable)
+    }
+
+    @GetMapping("/{userId}/followees")
+    fun getFollowees(@PathVariable userId: String, pageable: Pageable): FolloweeResponse {
+        return userService.getFollowees(userId, pageable)
     }
 
     @PostMapping("/bio")
@@ -93,4 +99,12 @@ data class CreateUserRequest(
 
 data class BioUpdateRequest(
     @JsonProperty("bio") val bio: String
+)
+
+data class FollowerResponse(
+    val followers: List<BasicUser>,
+)
+
+data class FolloweeResponse(
+    val followees: List<BasicUser>
 )
