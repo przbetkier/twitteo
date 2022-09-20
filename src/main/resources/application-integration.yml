@@ -17,3 +17,8 @@ firebase:
   client-email: "email"
   client-id: "client-id"
   client-x509-cert-url: "cert-url"
+
+minio:
+  endpoint: "http://localhost:9000"
+  accessKey: "access"
+  secretKey: "secret"
