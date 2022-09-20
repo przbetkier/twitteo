@@ -10,4 +10,12 @@ data class User(
     val userId: String,
     val displayName: String,
     val bio: String? = ""
+) {
+    fun toBasicUser(): BasicUser =
+        BasicUser(userId, displayName)
+}
+
+data class BasicUser(
+    val userId: String,
+    val displayName: String
 )

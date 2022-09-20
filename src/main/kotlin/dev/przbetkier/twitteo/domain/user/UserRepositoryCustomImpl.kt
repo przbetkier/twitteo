@@ -1,7 +1,6 @@
 package dev.przbetkier.twitteo.domain.user
 
 import org.neo4j.driver.Record
-import org.neo4j.driver.Value
 import org.springframework.data.neo4j.core.Neo4jClient
 
 class UserRepositoryCustomImpl(
@@ -59,29 +58,6 @@ class UserRepositoryCustomImpl(
             .fetchAs(UserResponse::class.java)
             .mappedBy { _, record -> UserResponse.fromRecord(record) }
             .all().first()
-    }
-
-    override fun getFollowers(userId: String): FollowerResponse {
-        val parameters = mapOf(
-            "userId" to userId,
-        )
-
-        return neo4jClient.query {
-            """
-                MATCH (u:User {userId: ${"$"}userId})
-                OPTIONAL MATCH (follower: User)-[:FOLLOWS]->(u)
-                OPTIONAL MATCH (u)-[:FOLLOWS]->(follows:User)
-                RETURN 
-                {
-                    followees: COLLECT(distinct follows),
-                    followers: COLLECT(distinct follower)
-                } as followerResponse
-            """.trimIndent()
-        }
-            .bindAll(parameters)
-            .fetchAs(FollowerResponse::class.java)
-            .mappedBy { _, record -> FollowerResponse.fromRecord(record) }
-            .one().get()
     }
 
     override fun getFollowerState(followerUid: String, followeeUid: String): FollowerState {
@@ -204,36 +180,6 @@ data class UserResponse(
                     it.get("bio").asString("")
                 )
             }
-    }
-}
-
-data class FollowerResponse(
-    val followers: List<Follower>,
-    val followees: List<Follower>
-) {
-    companion object {
-        fun fromRecord(record: Record): FollowerResponse {
-            val node = record.get("followerResponse")
-            return FollowerResponse(
-                followers = node.get("followers").asList { Follower.fromValue(it) },
-                followees = node.get("followees").asList { Follower.fromValue(it) },
-            )
-        }
-    }
-}
-
-data class Follower(
-    val userId: String,
-    val displayName: String
-) {
-
-    companion object {
-        fun fromValue(value: Value): Follower {
-            return Follower(
-                value.get("userId").asString(),
-                value.get("displayName").asString()
-            )
-        }
     }
 }
 

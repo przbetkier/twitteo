@@ -71,8 +71,7 @@ class TweetEndpoint(
         val authentication: Authentication = SecurityContextHolder.getContext().authentication
         val uid: String = authentication.name
         return tweetRepository.likeTweet(uid, tweetId).also {
-            println("Liked tweet")
-            println(uid)
+            logger.info { "User [$uid] liked tweet [$tweetId]." }
         }
     }
 

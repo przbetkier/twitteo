@@ -173,12 +173,18 @@ open class TweetRepositoryCustomImpl(
             """
                 MATCH (u:User)
                 WHERE u.userId = ${"$"}userId
+                // User's tweets (without replies)
                 OPTIONAL MATCH (u)-[:POSTS]->(ut:Tweet) 
                 WHERE NOT ut:Reply
-                with COLLECT(distinct ut) as ut, u
+                WITH COLLECT(distinct ut) as ut, u
+                // User's followers tweets
                 OPTIONAL MATCH (u)-[:FOLLOWS]->(f)-[:POSTS]->(ft:Tweet)
                 WHERE NOT ft:Reply
-                WITH COLLECT(distinct ft) + ut as tweets
+                WITH COLLECT(distinct ft) as ft, ut, u
+                // Tweets where user was mentioned
+                OPTIONAL MATCH (mt: Tweet)-[:MENTIONS]->(u)
+                WHERE NOT mt:Reply
+                WITH COLLECT(distinct mt) + ft + ut as tweets
                 WITH tweets, SIZE(tweets) as count
                 UNWIND tweets as t
                 MATCH (u)-[:POSTS]->(t)
