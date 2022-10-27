@@ -29,12 +29,13 @@ data class Tweet(
     val userWhoPosted: User,
 ) {
 
-    fun toTweetResponse() = TweetResponse(
+    fun toTweetResponse(avatarUrl: String?) = TweetResponse(
         id!!,
         content,
         createdAt,
         userWhoPosted.userId,
         userWhoPosted.displayName,
-        attachments.map { attachment -> attachment.id!! }.toSet()
+        attachments.map { attachment -> attachment.id!! }.toSet(),
+        avatarUrl
     )
 }

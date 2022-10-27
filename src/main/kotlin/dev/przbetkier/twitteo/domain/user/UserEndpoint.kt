@@ -5,14 +5,8 @@ import mu.KotlinLogging
 import org.springframework.data.domain.Pageable
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
 
 @RestController
 @RequestMapping("/users")
@@ -40,12 +34,24 @@ class UserEndpoint(
         return userService.getFollowees(userId, pageable)
     }
 
-    @PostMapping("/bio")
-    fun setBio(@RequestBody request: BioUpdateRequest) {
+    @PostMapping("/profile")
+    fun updateProfile(@RequestBody request: ProfileUpdateRequest): UserResponse {
         val authentication: Authentication = SecurityContextHolder.getContext().authentication
         val uid: String = authentication.name
 
-        return userService.updateBio(uid, request.bio)
+        return userService.updateProfile(uid, request)
+    }
+
+    @PostMapping("/avatar")
+    fun uploadAvatar(
+        @RequestPart(value = "file", required = true) file: MultipartFile
+    ): AvatarUploadResponse {
+        val authentication: Authentication = SecurityContextHolder.getContext().authentication
+        val userId: String = authentication.name
+
+        logger.info { "User [$userId] uploading an avatar." }
+
+        return userService.uploadAvatar(file, userId)
     }
 
     @PostMapping("/{followee}/followers")
@@ -97,8 +103,13 @@ data class CreateUserRequest(
     @JsonProperty("displayName") val displayName: String
 )
 
-data class BioUpdateRequest(
-    @JsonProperty("bio") val bio: String
+data class ProfileUpdateRequest(
+    val bio: String?,
+    val avatarUrl: String?
+)
+
+data class AvatarUploadResponse(
+    @JsonProperty("url") val url: String
 )
 
 data class FollowerResponse(

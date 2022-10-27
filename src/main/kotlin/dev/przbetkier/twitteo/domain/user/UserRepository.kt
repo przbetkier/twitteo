@@ -27,4 +27,12 @@ interface UserRepository : Neo4jRepository<User, Long>, UserRepositoryCustom {
         """
     )
     fun getFollowees(userId: String, limit: Long, offset: Long): List<User>
+
+    @Query(
+        """
+        MATCH (u:User {userId: ${"$"}userId})
+        SET u.avatarUrl = ${"$"}avatarUrl
+        """
+    )
+    fun setAvatarUrl(userId: String, avatarUrl: String)
 }

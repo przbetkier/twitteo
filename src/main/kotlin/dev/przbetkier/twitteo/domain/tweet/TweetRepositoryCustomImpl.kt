@@ -64,6 +64,7 @@ open class TweetRepositoryCustomImpl(
                     hashtags: hashtags,
                     userId: u.userId,
                     userName: u.displayName,
+                    avatarUrl: u.avatarUrl
                     replies: 0
                 } as tweet
             """.trimIndent()
@@ -93,7 +94,8 @@ open class TweetRepositoryCustomImpl(
                     createdAt: t.createdAt,
                     attachments: collect(DISTINCT ID(a)),
                     userId: u.userId,
-                    userName: u.displayName
+                    userName: u.displayName,
+                    avatarUrl: u.avatarUrl
                 } as tweet
                 ORDER by tweet.createdAt DESC
                 SKIP ${"$"}offset LIMIT ${"$"}limit
@@ -123,7 +125,8 @@ open class TweetRepositoryCustomImpl(
                     createdAt: t.createdAt,
                     attachments: collect(DISTINCT ID(a)),
                     userId: u.userId,
-                    userName: u.displayName
+                    userName: u.displayName,
+                    avatarUrl: u.avatarUrl
                 } as tweet
                 SKIP ${"$"}offset LIMIT ${"$"}limit
             """.trimIndent()
@@ -151,7 +154,8 @@ open class TweetRepositoryCustomImpl(
                     content: r.content,
                     createdAt: r.createdAt,
                     userId: u.userId,
-                    userName: u.displayName
+                    userName: u.displayName,
+                    avatarUrl: u.avatarUrl
                 } as tweet
                 SKIP ${"$"}offset LIMIT ${"$"}limit
             """.trimIndent()
@@ -196,7 +200,8 @@ open class TweetRepositoryCustomImpl(
                     createdAt: t.createdAt,
                     attachments: collect(DISTINCT ID(a)),
                     userId: u.userId,
-                    userName: u.displayName
+                    userName: u.displayName,
+                    avatarUrl: u.avatarUrl
                 } as tweet
                 ORDER by tweet.createdAt DESC
                 SKIP ${"$"}offset LIMIT ${"$"}limit
@@ -251,7 +256,8 @@ open class TweetRepositoryCustomImpl(
                 WHERE ID(t) = ${"$"}tweetId
                 MATCH (u:User {userId: ${"$"}userId})
                 with t as tweet, u as user
-                MERGE (user)-[:LIKES]->(tweet)
+                MERGE (user)-[r:LIKES]->(tweet)
+                ON CREATE SET r.likedAt = datetime() 
                 WITH tweet
                 MATCH (users:User)-[:LIKES]->(tweet)
                 RETURN 
@@ -313,7 +319,8 @@ open class TweetRepositoryCustomImpl(
                     createdAt: t.createdAt,
                     attachments: collect(DISTINCT ID(a)),
                     userId: u.userId,
-                    userName: u.displayName
+                    userName: u.displayName,
+                    avatarUrl: u.avatarUrl
                 } as tweet
                 ORDER by tweet.createdAt DESC
                 
