@@ -1,14 +1,17 @@
 package dev.przbetkier.twitteo.domain.user
 
+import dev.przbetkier.twitteo.infrastructure.FileStorage
 import mu.KotlinLogging
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import org.springframework.web.multipart.MultipartFile
 
 private val logger = KotlinLogging.logger {}
 
 @Service
 class UserService(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val fileStorage: FileStorage
 ) {
 
     fun getFollowers(userId: String, pageable: Pageable): FollowerResponse =
@@ -31,7 +34,8 @@ class UserService(
         userRepository.save(
             User(
                 userId = userId,
-                displayName = request.displayName
+                displayName = request.displayName,
+                avatarUrl = null
             )
         )
     }
@@ -61,8 +65,17 @@ class UserService(
     fun getFollowerState(followerUid: String, followeeUid: String) =
         userRepository.getFollowerState(followerUid, followeeUid)
 
-    fun updateBio(userId: String, bio: String) =
-        userRepository.setBio(userId, bio)
+    fun updateProfile(userId: String, request: ProfileUpdateRequest): UserResponse {
+        request.bio?.let { userRepository.setBio(userId, it) }
+        request.avatarUrl?.let { userRepository.setAvatarUrl(userId, it) }
+        return getUser(userId)
+    }
+
+    fun uploadAvatar(file: MultipartFile, userId: String): AvatarUploadResponse {
+        val uploadedFileName = fileStorage.store(file, "avatars").`object`()
+        val avatarUrl = fileStorage.getObjectUrl(uploadedFileName, "avatars")
+        return AvatarUploadResponse(avatarUrl)
+    }
 
     fun getMentionedUsersByContent(content: String) =
         UserMentionExtractor.extract(content).toSet().let {

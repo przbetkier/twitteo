@@ -30,7 +30,7 @@ class TweetService(
         val authentication: Authentication = SecurityContextHolder.getContext().authentication
         val uid: String = authentication.name
 
-        val savedTweet = userService.findByUserId(uid)?.let { user ->
+        return userService.findByUserId(uid)?.let { user ->
             val tweetToSave = Tweet(
                 userWhoPosted = user,
                 content = request.content,
@@ -40,12 +40,13 @@ class TweetService(
                 usersWhoLiked = mutableListOf(),
                 createdAt = ZonedDateTime.now(),
             )
-            tweetRepository.save(tweetToSave).also {
-                logger.info { "User $uid posted tweet ${it.id} with content ${it.content} tagged with [${it.hashtags.size}] hashtags" }
-            }
-        }
 
-        return savedTweet?.toTweetResponse() ?: throw RuntimeException() // FIXME fix with domain exception
+            tweetRepository.save(tweetToSave).let {
+                logger.info { "User $uid posted tweet ${it.id} with content ${it.content} tagged with [${it.hashtags.size}] hashtags" }
+                it.toTweetResponse(user.avatarUrl)
+            }
+        } ?: throw RuntimeException() // FIXME fix with domain exception
+
     }
 
     fun findByHashtag(tagId: String, pageable: Pageable) =
@@ -56,7 +57,7 @@ class TweetService(
         tweetRepository.deleteTweetNew(userId, tweetId).also {
             attachments ->
             logger.info { "Tweet $tweetId has been deleted" }
-            attachmentService.removeFromBucket(attachments)
+            attachmentService.deleteAttachments(attachments)
             logger.info { "Tweet $tweetId attachments have been removed" }
         }
     }

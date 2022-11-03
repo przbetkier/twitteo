@@ -24,7 +24,8 @@ class UserRepositoryCustomImpl(
                     displayName: u.displayName,
                     bio: u.bio,
                     follows: COUNT(distinct follows),
-                    followers: COUNT(distinct follower)
+                    followers: COUNT(distinct follower),
+                    avatarUrl: u.avatarUrl
                 } as user
             """.trimIndent()
         }
@@ -50,7 +51,8 @@ class UserRepositoryCustomImpl(
                     displayName: u.displayName,
                     bio: u.bio,
                     follows: COUNT(distinct follows),
-                    followers: COUNT(distinct follower)
+                    followers: COUNT(distinct follower),
+                    avatarUrl: u.avatarUrl
                 } as user
             """.trimIndent()
         }
@@ -151,7 +153,8 @@ class UserRepositoryCustomImpl(
                     displayName: u.displayName,
                     bio: u.bio,
                     follows: COUNT(distinct follows),
-                    followers: COUNT(distinct follower)
+                    followers: COUNT(distinct follower),
+                    avatarUrl: u.avatarUrl
                 } as user
             """.trimIndent()
         }
@@ -167,7 +170,8 @@ data class UserResponse(
     val displayName: String,
     val followers: Long,
     val follows: Long,
-    val bio: String
+    val bio: String,
+    val avatarUrl: String?
 ) {
     companion object {
         fun fromRecord(record: Record) =
@@ -177,7 +181,8 @@ data class UserResponse(
                     it.get("displayName").asString(),
                     it.get("followers").asLong(),
                     it.get("follows").asLong(),
-                    it.get("bio").asString("")
+                    it.get("bio").asString(""),
+                    it.get("avatarUrl").asString("")
                 )
             }
     }

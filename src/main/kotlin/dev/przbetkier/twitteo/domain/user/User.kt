@@ -9,13 +9,15 @@ data class User(
     @Id @GeneratedValue var id: Long? = null,
     val userId: String,
     val displayName: String,
-    val bio: String? = ""
+    val bio: String? = "",
+    val avatarUrl: String?
 ) {
     fun toBasicUser(): BasicUser =
-        BasicUser(userId, displayName)
+        BasicUser(userId, displayName, avatarUrl)
 }
 
 data class BasicUser(
     val userId: String,
-    val displayName: String
+    val displayName: String,
+    val avatarUrl: String?
 )

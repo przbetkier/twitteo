@@ -23,7 +23,7 @@ class AttachmentsEndpoint(
         attachmentService.getByFileId(fileId)
 
     @PostMapping
-    fun getUploadFile(
+    fun uploadFile(
         @RequestPart(value = "file", required = true) file: MultipartFile
     ): ObjectUploadedResponse {
         val authentication: Authentication = SecurityContextHolder.getContext().authentication
