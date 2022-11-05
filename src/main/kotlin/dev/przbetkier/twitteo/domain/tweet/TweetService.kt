@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 
 private val logger = KotlinLogging.logger {}
 
@@ -54,11 +55,32 @@ class TweetService(
 
     @Transactional
     fun deleteTweet(tweetId: Long, userId: String) {
-        tweetRepository.deleteTweetNew(userId, tweetId).also {
-            attachments ->
+        tweetRepository.deleteTweetNew(userId, tweetId).also { attachments ->
             logger.info { "Tweet $tweetId has been deleted" }
             attachmentService.deleteAttachments(attachments)
             logger.info { "Tweet $tweetId attachments have been removed" }
         }
     }
+
+    @Transactional
+    fun editTweet(request: TweetEditRequest, userId: String): TweetResponse {
+        return tweetRepository.findById(request.tweetId).map {
+            if (canBeEdited(it, userId)) {
+                val hashtags = hashtagService.getHashtagFromContent(request.content)
+                val updatedTweet = it.copy(
+                    content = request.content,
+                    hashtags = hashtags.toMutableList(),
+                    edited = true
+                )
+                tweetRepository.save(updatedTweet)
+                    .toTweetResponse(it.userWhoPosted.avatarUrl)
+                    .also { logger.info { "User $userId updated tweet ${it.id} with content ${it.content}" } }
+            } else {
+                throw RuntimeException()
+            }
+        }.orElseThrow { RuntimeException() }
+    }
+
+    private fun canBeEdited(tweet: Tweet, userId: String): Boolean =
+        ChronoUnit.MINUTES.between(tweet.createdAt, ZonedDateTime.now()) < 5 && tweet.userWhoPosted.userId == userId
 }

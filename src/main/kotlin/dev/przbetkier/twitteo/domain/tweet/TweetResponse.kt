@@ -27,7 +27,8 @@ data class TweetResponse(
     val userId: String,
     val userName: String,
     val attachments: Set<Long>,
-    val avatarUrl: String?
+    val avatarUrl: String?,
+    val edited: Boolean
 ) {
     companion object {
         fun fromValue(value: Value): TweetResponse {
@@ -39,6 +40,7 @@ data class TweetResponse(
                 value.get("userName").asString(),
                 value.get("attachments").asList { p -> p.asLong() }.toSet(),
                 value.get("avatarUrl").asString(""),
+                value.get("edited").asBoolean(false)
             )
         }
 
@@ -51,6 +53,7 @@ data class TweetResponse(
                 record.get("tweet").get("userName").asString(),
                 record.get("tweet").get("attachments").asList { p -> p.asLong() }.toSet(),
                 record.get("tweet").get("avatarUrl").asString(""),
+                record.get("tweet").get("edited").asBoolean(false),
             )
         }
     }
