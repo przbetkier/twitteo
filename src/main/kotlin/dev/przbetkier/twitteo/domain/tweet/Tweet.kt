@@ -27,6 +27,7 @@ data class Tweet(
     val mentionedUsers: MutableList<User> = mutableListOf(),
     @Relationship(type = "POSTS", direction = INCOMING)
     val userWhoPosted: User,
+    val edited: Boolean = false
 ) {
 
     fun toTweetResponse(avatarUrl: String?) = TweetResponse(
@@ -36,6 +37,7 @@ data class Tweet(
         userWhoPosted.userId,
         userWhoPosted.displayName,
         attachments.map { attachment -> attachment.id!! }.toSet(),
-        avatarUrl
+        avatarUrl,
+        edited
     )
 }

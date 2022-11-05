@@ -64,7 +64,8 @@ open class TweetRepositoryCustomImpl(
                     hashtags: hashtags,
                     userId: u.userId,
                     userName: u.displayName,
-                    avatarUrl: u.avatarUrl
+                    avatarUrl: u.avatarUrl,
+                    edited: tweet.edited
                     replies: 0
                 } as tweet
             """.trimIndent()
@@ -95,7 +96,8 @@ open class TweetRepositoryCustomImpl(
                     attachments: collect(DISTINCT ID(a)),
                     userId: u.userId,
                     userName: u.displayName,
-                    avatarUrl: u.avatarUrl
+                    avatarUrl: u.avatarUrl,
+                    edited: t.edited
                 } as tweet
                 ORDER by tweet.createdAt DESC
                 SKIP ${"$"}offset LIMIT ${"$"}limit
@@ -126,7 +128,8 @@ open class TweetRepositoryCustomImpl(
                     attachments: collect(DISTINCT ID(a)),
                     userId: u.userId,
                     userName: u.displayName,
-                    avatarUrl: u.avatarUrl
+                    avatarUrl: u.avatarUrl,
+                    edited: t.edited
                 } as tweet
                 SKIP ${"$"}offset LIMIT ${"$"}limit
             """.trimIndent()
@@ -155,7 +158,8 @@ open class TweetRepositoryCustomImpl(
                     createdAt: r.createdAt,
                     userId: u.userId,
                     userName: u.displayName,
-                    avatarUrl: u.avatarUrl
+                    avatarUrl: u.avatarUrl,
+                    edited: r.edited
                 } as tweet
                 SKIP ${"$"}offset LIMIT ${"$"}limit
             """.trimIndent()
@@ -201,7 +205,8 @@ open class TweetRepositoryCustomImpl(
                     attachments: collect(DISTINCT ID(a)),
                     userId: u.userId,
                     userName: u.displayName,
-                    avatarUrl: u.avatarUrl
+                    avatarUrl: u.avatarUrl,
+                    edited: t.edited
                 } as tweet
                 ORDER by tweet.createdAt DESC
                 SKIP ${"$"}offset LIMIT ${"$"}limit
@@ -320,7 +325,8 @@ open class TweetRepositoryCustomImpl(
                     attachments: collect(DISTINCT ID(a)),
                     userId: u.userId,
                     userName: u.displayName,
-                    avatarUrl: u.avatarUrl
+                    avatarUrl: u.avatarUrl,
+                    edited: t.edited
                 } as tweet
                 ORDER by tweet.createdAt DESC
                 
