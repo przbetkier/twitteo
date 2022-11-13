@@ -62,6 +62,18 @@ class TweetService(
         }
     }
 
+    fun getTweetById(tweetId: Long): TweetResponse {
+        return tweetRepository.findById(tweetId).map {
+            it.toTweetResponse(it.userWhoPosted.avatarUrl)
+        }.orElseThrow { RuntimeException() }
+    }
+
+    fun createReply(request: TweetRequest, referenceTweetId: Long): TweetResponse {
+        val tweet = createTweet(request)
+        tweetRepository.markAsReplyTweet(tweet.id, referenceTweetId)
+        return tweet
+    }
+
     @Transactional
     fun editTweet(request: TweetEditRequest, userId: String): TweetResponse {
         return tweetRepository.findById(request.tweetId).map {

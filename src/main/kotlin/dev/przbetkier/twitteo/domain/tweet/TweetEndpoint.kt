@@ -1,19 +1,11 @@
 package dev.przbetkier.twitteo.domain.tweet
 
 import dev.przbetkier.twitteo.domain.hashtag.HashtagExtractor
-import dev.przbetkier.twitteo.domain.user.UserMentionExtractor
 import mu.KotlinLogging
 import org.springframework.data.domain.Pageable
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PatchMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 private val logger = KotlinLogging.logger {}
 
@@ -31,14 +23,13 @@ class TweetEndpoint(
         return tweetService.createTweet(request)
     }
 
-    @GetMapping("/{userId}")
-    fun getTweets(@PathVariable userId: String, pageable: Pageable): List<TweetResponse> {
+    @GetMapping
+    fun getTweets(@RequestParam userId: String, pageable: Pageable): List<TweetResponse> {
         return tweetRepository.findByAuthor(userId, pageable)
     }
 
     @GetMapping("/feed")
     fun getTweetFeed(pageable: Pageable): TweetPageResponse {
-
         val authentication: Authentication = SecurityContextHolder.getContext().authentication
 
         val userId: String = authentication.name
@@ -47,23 +38,11 @@ class TweetEndpoint(
 
     @PostMapping("/{tweetId}/replies")
     fun reply(@RequestBody request: TweetRequest, @PathVariable tweetId: Long): TweetResponse {
-        val authentication: Authentication = SecurityContextHolder.getContext().authentication
-        val hashtags = HashtagExtractor.extract(request.content).toSet()
-
-        val uid: String = authentication.name
-
-        return tweetRepository.replyToTweet(
-            uid,
-            tweetId,
-            hashtags,
-            request.content
-        ).also {
-            logger.info { "User $uid posted tweet ${it.id} as a reply to tweet $tweetId with content ${it.content} tagged with [${hashtags.size}] tags" }
-        }
+        return tweetService.createReply(request, tweetId)
     }
 
     @GetMapping("/{tweetId}/replies")
-    fun getReplies(@PathVariable tweetId: Long, pageable: Pageable): List<TweetResponse> {
+    fun getReplies(@PathVariable tweetId: Long, pageable: Pageable): TweetPageResponse {
         return tweetRepository.getReplies(tweetId, pageable)
     }
 
@@ -90,6 +69,11 @@ class TweetEndpoint(
         val authentication: Authentication = SecurityContextHolder.getContext().authentication
         val uid: String = authentication.name
         return tweetRepository.getLikeState(uid, tweetId)
+    }
+
+    @GetMapping("/{tweetId}")
+    fun getTweet(@PathVariable tweetId: Long): TweetResponse {
+        return tweetService.getTweetById(tweetId)
     }
 
     @DeleteMapping("/{tweetId}")
