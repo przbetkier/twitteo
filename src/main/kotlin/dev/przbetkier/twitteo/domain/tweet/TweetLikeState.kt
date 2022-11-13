@@ -8,14 +8,16 @@ enum class TweetLikeState {
 
 data class TweetLikeStateResponse(
     val state: TweetLikeState,
-    val likes: Long
+    val likes: Long,
+    val replies: Long
 ) {
     companion object {
         fun fromRecord(record: Record) =
             record.get("result").let {
                 TweetLikeStateResponse(
                     TweetLikeState.valueOf(it.get("state").asString()),
-                    it.get("likes").asLong()
+                    it.get("likes").asLong(),
+                    it.get("replies").asLong()
                 )
             }
     }

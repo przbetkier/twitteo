@@ -18,4 +18,16 @@ interface TweetRepository : Neo4jRepository<Tweet, Long>, TweetRepositoryCustom 
         """
     )
     fun deleteTweetNew(userId: String, tweetId: Long): List<String>
+
+    @Query(
+        """
+            MATCH (t: Tweet)
+            WHERE ID(t) = ${"$"}tweetId
+            MATCH (ref: Tweet)
+            WHERE ID(ref) = ${"$"}referenceTweetId
+            MERGE (t)-[:REPLIES_TO]->(ref)
+            SET t:Reply
+        """
+    )
+    fun markAsReplyTweet(tweetId: Long, referenceTweetId: Long)
 }

@@ -61,11 +61,11 @@ open class TweetRepositoryCustomImpl(
                     id: id(tweet),
                     content: tweet.content,
                     createdAt: tweet.createdAt,
-                    hashtags: hashtags,
+                    attachments: collect(DISTINCT ID(a)),
                     userId: u.userId,
                     userName: u.displayName,
                     avatarUrl: u.avatarUrl,
-                    edited: tweet.edited
+                    edited: tweet.edited,
                     replies: 0
                 } as tweet
             """.trimIndent()
@@ -140,7 +140,7 @@ open class TweetRepositoryCustomImpl(
             .all().toList()
     }
 
-    override fun getReplies(referenceTweetId: Long, pageable: Pageable): List<TweetResponse> {
+    override fun getReplies(referenceTweetId: Long, pageable: Pageable): TweetPageResponse {
         val parameters = mapOf(
             "referenceTweetId" to referenceTweetId,
             "limit" to pageable.pageSize,
@@ -151,23 +151,31 @@ open class TweetRepositoryCustomImpl(
             """
                 MATCH (u:User)-[:POSTS]->(r:Reply)-[:REPLIES_TO]->(t:Tweet)
                 WHERE ID(t) = ${"$"}referenceTweetId  
-                RETURN 
+                OPTIONAL MATCH (r)-[:ATTACHES]->(a: Attachment)
+                WITH COUNT(r) as count, 
                 {
                     id: id(r),
                     content: r.content,
                     createdAt: r.createdAt,
+                    attachments: collect(DISTINCT ID(a)),
                     userId: u.userId,
                     userName: u.displayName,
                     avatarUrl: u.avatarUrl,
                     edited: r.edited
-                } as tweet
+                } as reply
+                ORDER by reply.createdAt ASC
                 SKIP ${"$"}offset LIMIT ${"$"}limit
+                WITH COLLECT(reply) as tweets, count as count
+                RETURN {
+                    tweets: tweets,
+                    total: count
+                } as result
             """.trimIndent()
         }
             .bindAll(parameters)
-            .fetchAs(TweetResponse::class.java)
-            .mappedBy { _, record -> TweetResponse.fromRecord(record) }
-            .all().toList()
+            .fetchAs(TweetPageResponse::class.java)
+            .mappedBy { _, record -> TweetPageResponse.fromRecord(record) }
+            .one().orElse(TweetPageResponse(emptyList(), 0))
     }
 
     override fun getFeed(userId: String, pageable: Pageable): TweetPageResponse {
@@ -235,11 +243,13 @@ open class TweetRepositoryCustomImpl(
             MATCH (t: Tweet) WHERE ID(t) = ${"$"}tweetId
             OPTIONAL MATCH (u:User {userId: ${"$"}userId} )-[userLike:LIKES]->(t)
             OPTIONAL MATCH (:User)-[total:LIKES]->(t)
-            WITH CASE WHEN COUNT(distinct u) = 1 THEN 'CAN_UNLIKE' else 'CAN_LIKE' END as state, COUNT(total) as likes
+            OPTIONAL MATCH (:User)-[:POSTS]-(r:Reply)-[REPLIES_TO]->(t)
+            WITH CASE WHEN COUNT(distinct u) = 1 THEN 'CAN_UNLIKE' else 'CAN_LIKE' END as state, COUNT(DISTINCT total) as likes, COUNT(DISTINCT r) as replies
             RETURN 
             {
                 state: state,
-                likes: likes
+                likes: likes,
+                replies: replies
             } as result
             """.trimIndent()
         }
