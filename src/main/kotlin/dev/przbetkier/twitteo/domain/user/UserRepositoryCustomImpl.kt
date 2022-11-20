@@ -59,7 +59,7 @@ class UserRepositoryCustomImpl(
             .bindAll(parameters)
             .fetchAs(UserResponse::class.java)
             .mappedBy { _, record -> UserResponse.fromRecord(record) }
-            .all().first()
+            .first().orElseThrow { UserNotFoundException() }
     }
 
     override fun getFollowerState(followerUid: String, followeeUid: String): FollowerState {
