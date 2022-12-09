@@ -65,7 +65,8 @@ class TrendingRepositoryImpl(
                 RETURN
                 $MOST_FOLLOWED_USER_PROJECTION
             """.trimIndent()
-        }.fetchAs(TrendingUserResponse::class.java)
+        }
+            .fetchAs(TrendingUserResponse::class.java)
             .mappedBy { _, record -> TrendingUserResponse.fromRecord(record) }
             .all().toList()
     }

@@ -244,7 +244,10 @@ open class TweetRepositoryCustomImpl(
             OPTIONAL MATCH (u:User {userId: ${"$"}userId} )-[userLike:LIKES]->(t)
             OPTIONAL MATCH (:User)-[total:LIKES]->(t)
             OPTIONAL MATCH (:User)-[:POSTS]-(r:Reply)-[REPLIES_TO]->(t)
-            WITH CASE WHEN COUNT(distinct u) = 1 THEN 'CAN_UNLIKE' else 'CAN_LIKE' END as state, COUNT(DISTINCT total) as likes, COUNT(DISTINCT r) as replies
+            WITH 
+                CASE WHEN COUNT(distinct u) = 1 THEN 'CAN_UNLIKE' else 'CAN_LIKE' END as state, 
+                COUNT(DISTINCT total) as likes, 
+                COUNT(DISTINCT r) as replies
             RETURN 
             {
                 state: state,
